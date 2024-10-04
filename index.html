@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Simple Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        #connection-status {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+        #ip-input, #connect-btn, #disconnect-btn {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Client</h1>
+
+    <label for="ip-input">WebSocket IP:</label>
+    <input type="text" id="ip-input" value="ws://127.0.0.1:4000" placeholder="ws://IP:PORT">
+
+    <button id="connect-btn">Conectar</button>
+    <button id="disconnect-btn" disabled>Desconectar</button>
+
+    <p id="connection-status">Status: Desconectado</p>
+
+    <script>
+        let socket;
+        const statusText = document.getElementById("connection-status");
+        const connectBtn = document.getElementById("connect-btn");
+        const disconnectBtn = document.getElementById("disconnect-btn");
+        const ipInput = document.getElementById("ip-input");
+
+        // Atualiza o status da conexão
+        function updateStatus(message) {
+            statusText.textContent = `Status: ${message}`;
+        }
+
+        // Conectar ao WebSocket
+        connectBtn.addEventListener("click", () => {
+            const wsUrl = ipInput.value;
+            if (!wsUrl) {
+                updateStatus("Erro: IP inválido.");
+                return;
+            }
+
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                updateStatus("Conectado");
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            };
+
+            socket.onclose = () => {
+                updateStatus("Desconectado");
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            };
+
+            socket.onerror = (error) => {
+                updateStatus("Erro na conexão");
+                console.error("WebSocket error:", error);
+            };
+        });
+
+        // Desconectar do WebSocket
+        disconnectBtn.addEventListener("click", () => {
+            if (socket) {
+                socket.close();
+            }
+        });
+    </script>
+</body>
+</html>
