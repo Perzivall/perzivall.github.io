@@ -3,67 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cliente WebSocket Seguro</title>
+    <title>WebSocket Simple Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        #connection-status {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+        #ip-input, #connect-btn, #disconnect-btn {
+            margin: 10px 0;
+        }
+    </style>
 </head>
-
 <body>
-    <h1>Cliente WebSocket Seguro</h1>
-    <button id="sendButton">Selecionar Impressora</button>
-    <button id="sendEscPosButton">Enviar ESC/POS</button>
-    <p id="status">Status: Desconectado</p>
-
+    <h1>WebSocket Client</h1>
+    <label for="ip-input">WebSocket IP:</label>
+    <input type="text" id="ip-input" value="ws://127.0.0.1:4000" placeholder="ws://IP:PORT">
+    <button id="connect-btn">Conectar</button>
+    <button id="disconnect-btn" disabled>Desconectar</button>
+    <p id="connection-status">Status: Desconectado</p>
     <script>
-        // Cria uma conexão WebSocket segura
-        const socket = new WebSocket('ws://127.0.0.1:4000');
-
-        // Evento quando a conexão é aberta
-        socket.addEventListener('open', function (event) {
-            document.getElementById('status').innerText = 'Status: Conectado';
-        });
-
-        // Evento para mensagens recebidas
-        socket.addEventListener('message', function (event) {
-            console.log('Mensagem recebida do servidor: ', event.data);
-        });
-
-        // Evento para erro
-        socket.addEventListener('error', function (event) {
-            console.error('Erro na conexão WebSocket: ', event);
-            document.getElementById('status').innerText = 'Status: Erro na conexão';
-        });
-
-        // Evento para fechamento da conexão
-        socket.addEventListener('close', function (event) {
-            document.getElementById('status').innerText = 'Status: Conexão fechada';
-        });
-
-        // Função para enviar a mensagem ao clicar no botão "Selecionar Impressora"
-        document.getElementById('sendButton').addEventListener('click', function () {
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send('select_printer');
-                console.log('Mensagem enviada: select_printer');
-            } else {
-                console.error('A conexão WebSocket não está aberta.');
+        let socket;
+        const statusText = document.getElementById("connection-status");
+        const connectBtn = document.getElementById("connect-btn");
+        const disconnectBtn = document.getElementById("disconnect-btn");
+        const ipInput = document.getElementById("ip-input");
+        // Atualiza o status da conexão
+        function updateStatus(message) {
+            statusText.textContent = `Status: ${message}`;
+        }
+        // Conectar ao WebSocket
+        connectBtn.addEventListener("click", () => {
+            const wsUrl = ipInput.value;
+            if (!wsUrl) {
+                updateStatus("Erro: IP inválido.");
+                return;
             }
+            socket = new WebSocket(wsUrl);
+            socket.onopen = () => {
+                updateStatus("Conectado");
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            };
+            socket.onclose = () => {
+                updateStatus("Desconectado");
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            };
+            socket.onerror = (error) => {
+                updateStatus("Erro na conexão");
+                console.error("WebSocket error:", error);
+            };
         });
-
-        // Função para converter texto ESC/POS em Base64 e enviar ao clicar no botão "Enviar ESC/POS"
-        document.getElementById('sendEscPosButton').addEventListener('click', function () {
-            if (socket.readyState === WebSocket.OPEN) {
-    // Texto ESC/POS (exemplo)
-const escPosText = new Uint8Array([
-    0x1B, 0x40, // Inicializa a impressora
-    0x1B, 0x45, 0x01, // Ativa o negrito
-    ...new TextEncoder().encode("Texto em negrito"), // Texto
-    0x1B, 0x45, 0x00, // Desativa o negrito
-    0x0A // Nova linha
-]);
-    const base64String = btoa(String.fromCharCode.apply(null, escPosText)); // Converte para Base64
-
-    socket.send(base64String);
-    console.log('Mensagem enviada: ', base64String);
-            } else {
-                console.error('A conexão WebSocket não está aberta.');
+        // Desconectar do WebSocket
+        disconnectBtn.addEventListener("click", () => {
+            if (socket) {
+                socket.close();
             }
         });
     </script>
